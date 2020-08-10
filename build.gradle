@@ -2,12 +2,15 @@ import org.gradle.api.publish.maven.*
 
 plugins {
     id 'org.jetbrains.intellij' version '0.4.21'
-    id 'maven-publish'
+    id 'maven'
     id 'signing'
 }
 
 group 'com.mesour.intellij'
-version '1.0.0-SNAPSHOT'
+version '1.0'
+
+Properties properties = new Properties()
+properties.load(project.rootProject.file("local.properties").newDataInputStream())
 
 tasks.withType(JavaCompile) {
     options.encoding = 'UTF-8'
@@ -16,9 +19,18 @@ tasks.withType(JavaCompile) {
 sourceCompatibility = 1.8
 targetCompatibility = 1.8
 
-java {
-    withJavadocJar()
-    withSourcesJar()
+task javadocJar(type: Jar) {
+    classifier = 'javadoc'
+    from javadoc
+}
+
+task sourcesJar(type: Jar) {
+    classifier = 'sources'
+    from sourceSets.main.allSource
+}
+
+artifacts {
+    archives javadocJar, sourcesJar
 }
 
 intellij {
@@ -31,33 +43,39 @@ intellij {
     ]
 }
 
-publishing {
-    publications {
-        mavenJava(MavenPublication) {
-            artifactId = artifact
-            from components.java
-            versionMapping {
-                usage('java-api') {
-                    fromResolutionOf('runtimeClasspath')
-                }
-                usage('java-runtime') {
-                    fromResolutionResult()
-                }
+uploadArchives {
+    repositories {
+        mavenDeployer {
+            beforeDeployment { MavenDeployment deployment -> signing.signPom(deployment) }
+
+            repository(url: "https://oss.sonatype.org/service/local/staging/deploy/maven2/") {
+                authentication(userName: properties.getProperty('ossrhUsername'), password: properties.getProperty('ossrhPassword'))
             }
-            pom {
-                name = 'IntelliJ Utils'
-                description = 'A concise description of my libraryUtils for IntelliJ platform especially for Nette plugins'
+
+            snapshotRepository(url: "https://oss.sonatype.org/content/repositories/snapshots/") {
+                authentication(userName: properties.getProperty('ossrhUsername'), password: properties.getProperty('ossrhPassword'))
+            }
+
+            pom.project {
+                name = 'IntelliJ Nette Utils'
+                packaging 'jar'
+                artifactId = artifact
+                description 'A application used as an example on how to set up pushing  its components to the Central Repository.'
                 url = 'http://github.com/nette-intellij/intellij-utils'
-                //properties = [
-               //         myProp: "value",
-                //        "prop.with.dots": "anotherValue"
-                //]
+
+                scm {
+                    connection = 'scm:git:git://github.com/nette-intellij/intellij-utils.git'
+                    developerConnection = 'scm:git:ssh://github.com/nette-intellij/intellij-utils.git'
+                    url = 'http://github.com/nette-intellij/intellij-utils/tree/master'
+                }
+
                 licenses {
                     license {
                         name = 'The Apache Software License, Version 2.0'
                         url = 'http://www.apache.org/licenses/LICENSE-2.0.txt'
                     }
                 }
+
                 developers {
                     developer {
                         id = 'mesour'
@@ -65,27 +83,14 @@ publishing {
                         email = 'matous.nemec@gmail.com'
                     }
                 }
-                scm {
-                    connection = 'scm:git:git://github.com/nette-intellij/intellij-utils.git'
-                    developerConnection = 'scm:git:ssh://github.com/nette-intellij/intellij-utils.git'
-                    url = 'http://github.com/nette-intellij/intellij-utils/tree/master'
-                }
             }
-        }
-    }
-    repositories {
-        maven {
-            // change URLs to point to your repos, e.g. http://my.org/repo
-            def releasesRepoUrl = "https://oss.sonatype.org/service/local/staging/deploy/maven2/"
-            def snapshotsRepoUrl = "https://oss.sonatype.org/content/repositories/snapshots"
-            url = version.endsWith('SNAPSHOT') ? snapshotsRepoUrl : releasesRepoUrl
         }
     }
 }
 
 signing {
     useGpgCmd()
-    sign publishing.publications.mavenJava
+    sign configurations.archives
 }
 
 jar {
@@ -94,7 +99,6 @@ jar {
 }
 
 apply plugin: 'org.jetbrains.intellij'
-apply plugin: 'maven'
 
 dependencies {
     compileOnly 'org.hamcrest:hamcrest-core:1.3'
