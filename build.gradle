@@ -7,7 +7,7 @@ plugins {
 }
 
 group 'com.mesour.intellij'
-version '1.0'
+version '1.0.0-SNAPSHOT'
 
 Properties properties = new Properties()
 properties.load(project.rootProject.file("local.properties").newDataInputStream())
@@ -60,7 +60,7 @@ uploadArchives {
                 name = 'IntelliJ Nette Utils'
                 packaging 'jar'
                 artifactId = artifact
-                description 'A application used as an example on how to set up pushing  its components to the Central Repository.'
+                description = 'A concise description of my libraryUtils for IntelliJ platform especially for Nette plugins'
                 url = 'http://github.com/nette-intellij/intellij-utils'
 
                 scm {
