@@ -1,0 +1,100 @@
+import org.gradle.api.publish.maven.*
+
+plugins {
+    id 'org.jetbrains.intellij' version '0.4.21'
+    id 'maven'
+    id 'maven-pulish'
+}
+
+group 'com.mesour.intellij'
+version '1.0.0-SNAPSHOT'
+
+tasks.withType(JavaCompile) {
+    options.encoding = 'UTF-8'
+}
+
+sourceCompatibility = 1.8
+targetCompatibility = 1.8
+
+intellij {
+    version '2020.2'
+    updateSinceUntilBuild false
+    plugins = [
+            "com.jetbrains.php:${phpPluginVersion}",
+            'java',
+            'properties'
+    ]
+}
+
+publishing {
+    publications {
+        mavenJava(MavenPublication) {
+            artifactId = artifact
+            from components.java
+            versionMapping {
+                usage('java-api') {
+                    fromResolutionOf('runtimeClasspath')
+                }
+                usage('java-runtime') {
+                    fromResolutionResult()
+                }
+            }
+            pom {
+                name = 'IntelliJ Utils'
+                description = 'A concise description of my libraryUtils for IntelliJ platform especially for Nette plugins'
+                url = 'http://github.com/nette-intellij/intellij-utils'
+                //properties = [
+               //         myProp: "value",
+                //        "prop.with.dots": "anotherValue"
+                //]
+                licenses {
+                    license {
+                        name = 'The Apache Software License, Version 2.0'
+                        url = 'http://www.apache.org/licenses/LICENSE-2.0.txt'
+                    }
+                }
+                developers {
+                    developer {
+                        id = 'mesour'
+                        name = 'Matouš Němec'
+                        email = 'matous.nemec@gmail.com'
+                    }
+                }
+                scm {
+                    connection = 'scm:git:git://github.com/nette-intellij/intellij-utils.git'
+                    developerConnection = 'scm:git:ssh://github.com/nette-intellij/intellij-utils.git'
+                    url = 'http://github.com/nette-intellij/intellij-utils/tree/master'
+                }
+            }
+        }
+    }
+    repositories {
+        maven {
+            // change URLs to point to your repos, e.g. http://my.org/repo
+            def releasesRepoUrl = "https://oss.sonatype.org/service/local/staging/deploy/maven2/"
+            def snapshotsRepoUrl = "https://oss.sonatype.org/content/repositories/snapshots"
+            url = version.endsWith('SNAPSHOT') ? snapshotsRepoUrl : releasesRepoUrl
+        }
+    }
+}
+
+jar {
+    archiveName artifact + '-' + version + '.jar'
+    from { configurations.compile.collect { it.isDirectory() ? it : zipTree(it) } }
+}
+
+apply plugin: 'org.jetbrains.intellij'
+apply plugin: 'maven'
+
+dependencies {
+    compileOnly 'org.hamcrest:hamcrest-core:1.3'
+    testCompile 'junit:junit:4.13'
+}
+
+repositories {
+    mavenCentral()
+    maven { url = 'https://mvnrepository.com/artifact/org.hamcrest/hamcrest-core' }
+    flatDir {
+        dirs 'libs'
+    }
+}
